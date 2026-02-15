@@ -53,7 +53,7 @@ Go to Tools > WebSocket Server Settings:
 Note: OBS WebSocket is built into newer OBS versions. If you're using an older OBS build that does not include WebSocket support, you may need to install the obs-websocket plugin.
 
 
-    ![Happy OBS](../media/OBS_Happy.png)
+![Happy OBS](../media/OBS_Happy.png)
 
 
 
