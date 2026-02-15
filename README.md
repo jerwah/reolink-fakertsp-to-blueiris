@@ -45,6 +45,12 @@ The system consists of three main components:
 *   Blue Iris installed and configured.
 *   Docker and Docker Compose installed.
 
+## Disclaimer
+
+This project is not affiliated with Reolink or Blue Iris. “Reolink” and “Blue Iris” are trademarks of their respective owners.
+
+This repo uses third-party Docker images (e.g., LinuxServer Webtop and MediaMTX). Those components are licensed by their upstream authors under their respective licenses; this repository’s license applies only to the content in this repo.
+
 ## Installation
 
 1.  **Configure the camera FTPS server:**
