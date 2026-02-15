@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+# Added the --scene flag to force Standby on launch
+Exec=bash -c "while ! nc -z 127.0.0.1 1935; do sleep 1; done && sleep 10 && obs --startstreaming --scene Standby"
+Hidden=false
+NoDisplay=false
+X-GNOME-Autostart-enabled=true
+Name=OBS AutoStream

@@ -1,0 +1,31 @@
+version: '3.7'
+services:
+  obs:
+    image: lscr.io/linuxserver/webtop:ubuntu-mate
+    container_name: obs_compositor
+    # Uncomment the devices section below if you want to use 
+    # Intel Hardware Acceleration (QuickSync) in OBS.
+    #devices:
+    #  - /dev/dri:/dev/dri 
+    network_mode: host
+    environment:
+      # CHECK THESE FOR YOUR USER/ENVIRONMENT!
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+      - DOCKER_MODS=lscr.io/linuxserver/mods:universal-package-install
+      - INSTALL_PACKAGES=obs-studio|ffmpeg|libxcb-cursor0|netcat-openbsd
+    volumes:
+      - ./config:/config
+      # The fakecam directory is where standby/error MP4s live for OBS playback.
+      - /var/lib/fakecam:/fakecam
+      # Source directory for incoming camera clips. Change this to match your FTPS destination.
+      - /home/camerauser/driveway:/home/camerauser/driveway:ro
+    restart: unless-stopped
+  # MediaMTX handles the RTSP/HLS stream distribution.
+  mediamtx:
+    image: bluenviron/mediamtx
+    container_name: mediamtx
+    network_mode: host
+    restart: unless-stopped
+

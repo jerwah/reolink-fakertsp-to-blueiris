@@ -1,0 +1,19 @@
+[Unit]
+Description=Reolink Driveway Motion Monitor
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+# Change if desired, user must be in docker group
+# and be able to write to Log, HOST_STAGING_PATH
+User=root
+# Adjust these paths if your venv or script is elsewhere
+WorkingDirectory=/opt/reolink_monitor
+ExecStart=/opt/reolink_monitor/.venv/bin/python3 /opt/reolink_monitor/monitor.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+
