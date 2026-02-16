@@ -142,35 +142,55 @@ class ReolinkHandler(FileSystemEventHandler):
             send_alert_email("CRITICAL: OBS Down", f"Connection failed: {e}")
 
 # --- MAINTENANCE ---
-
 def cleanup_old_files():
     """Removes files older than RETENTION_DAYS to prevent disk bloat."""
     now = time.time()
+    one_day_seconds = 86400
     try:
         for root, dirs, files in os.walk(BASE_PATH, topdown=False):
             for file in files:
                 file_path = os.path.join(root, file)
-                if os.stat(file_path).st_mtime < now - (RETENTION_DAYS * 86400):
+                if os.stat(file_path).st_mtime < now - (RETENTION_DAYS * one_day_seconds):
                     os.remove(file_path)
                     logging.info(f"Purged old file: {file}")
             
-            # Remove empty directories
+            # Only remove empty directories if they haven't been touched in 24 hours
+            # This prevents the script from deleting today's folder before a file lands.
             if not os.listdir(root) and root != BASE_PATH:
-                os.rmdir(root)
+                folder_age = now - os.path.getmtime(root)
+                if folder_age > one_day_seconds:
+                    os.rmdir(root)
+                    logging.info(f"Purged empty directory: {root}")
     except Exception as e:
         logging.error(f"Cleanup Error: {e}")
 
 def start_monitoring():
     current_path = get_current_date_path()
-    os.makedirs(current_path, exist_ok=True)
+    
     cleanup_old_files()
+
+    # Log ONCE that we are entering wait mode
+    if not os.path.exists(current_path):
+        logging.info(f"Watching for camera to create today's directory: {current_path}")
+    
+    # Stay silent in the loop
+    while not os.path.exists(current_path):
+        time.sleep(30)
+        # Handle day rollover while waiting
+        if get_current_date_path() != current_path:
+            return 
 
     event_handler = ReolinkHandler()
     observer = Observer()
-    observer.schedule(event_handler, current_path, recursive=False)
-
-    logging.info(f"Monitor started on: {current_path}")
-    observer.start()
+    
+    try:
+        observer.schedule(event_handler, current_path, recursive=False)
+        # Log ONCE when the folder is finally found
+        logging.info(f"Directory detected. Monitoring started on: {current_path}")
+        observer.start()
+    except Exception as e:
+        logging.error(f"Failed to start observer: {e}")
+        return
 
     try:
         current_day = datetime.now().day
