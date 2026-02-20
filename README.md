@@ -63,18 +63,22 @@ This repo uses third-party Docker images (e.g., LinuxServer Webtop and MediaMTX)
     * If the user running the OBS container doesn't have read access to the staged MP4s, playback will fail.
     * The monitoring service must be able to read the camera drop directory and write logs to `/var/log`.
 
-4.  **Configure the `monitor.py` script:**
-    *   Open the `monitor/monitor.py` file and edit the configuration section at the top of the file.
-    *  You'll need to review and possibly update:
-     - BASE_PATH - this is where the FTPs files are being dropped from the camera
-     - HOST_STAGING_PATH - this is where the MP4s get placed for OBS to consume them
-     - CONTAINER_STAGING_PATH - the path for HOST_STAGING_PATH INSIDE the container
-     - ERROR_VIDEO_NAME - name of the file to play for missing/corrput videos. Must be in CONTAINER_STAGING_PATH
-     - THE CODE CHMODS THE MP4s 644 BECAUSE VSFTPD IS DUMB. EDIT THIS OUT IF YOU DONT LIKE IT     - 
+4.  **Configure the monitor via INI (recommended):**
+        * Copy the sample config and then edit the INI values:
+            - `cp monitor/monitor.ini.sample monitor/monitor.ini`
+        * (Optional) Validate the INI without starting the monitor:
+            - `python3 monitor/monitor.py --test-config --config monitor/monitor.ini`
+        * The main settings you may need to review:
+            - `base_path` (where FTPS drops MP4s, expects `YYYY/MM/DD/` folders)
+            - `host_staging_path` and `container_staging_path` (where standby/error videos live, host vs container)
+            - `error_video_name` (must exist in the staging directory)
+            - `log_file` and `send_to` (logging + alert recipient)
+            - `obs.host`, `obs.port`, `obs.password` (OBS WebSocket connection)
+            - `permissions.enabled`, `permissions.user_group`, `permissions.file_mask`, `permissions.directory_mask` (optional chmod/chown fixups)
 
 5.  **Stage Standby and Error videos**
     * You can use the provided `Standby_With_Audio.mp4` and `ERROR_ALERT.mp4` or create your own.
-    * Copy them to the folder specified in `HOST_STAGING_PATH` (default: `/var/lib/fakecam`).
+    * Copy them to the folder specified by `host_staging_path` in your `monitor.ini` (default: `/var/lib/fakecam`).
 
 6.  **Start the Docker containers:**
     ```bash
@@ -93,6 +97,7 @@ This repo uses third-party Docker images (e.g., LinuxServer Webtop and MediaMTX)
     ```bash
     sudo mkdir -p /opt/reolink_monitor
     sudo cp monitor/monitor.py monitor/reolink_monitor.service monitor/requirements.txt /opt/reolink_monitor/
+    sudo cp monitor/monitor.ini.sample /opt/reolink_monitor/monitor.ini
     cd /opt/reolink_monitor
 
     # Create venv + install dependencies
@@ -111,7 +116,8 @@ This repo uses third-party Docker images (e.g., LinuxServer Webtop and MediaMTX)
 
     Notes:
     * The service file uses `/opt/reolink_monitor/.venv/bin/python3` by default.
-    * The monitor connects to OBS WebSocket at `127.0.0.1:4455`, so it must run on the same host where the OBS container is running (this repo uses `network_mode: host`).
+    * The service launches the script with `--config /opt/reolink_monitor/monitor.ini`.
+    * The monitor connects to OBS WebSocket at `127.0.0.1:4455` by default, so it must run on the same host where the OBS container is running (this repo uses `network_mode: host`).
 
 
 ## Usage
@@ -139,14 +145,14 @@ Use this checklist if you're not seeing motion clips make it into Blue Iris yet.
 
 1. Confirm FTPS uploads are landing where the monitor watches
     - Verify the camera is successfully uploading MP4s to your FTPS server.
-    - Confirm the files land under `BASE_PATH` (see `monitor/monitor.py`) using the `YYYY/MM/DD/` folder structure.
-    - Check today's directory exists and contains MP4s: `${BASE_PATH}/YYYY/MM/DD/`.
+    - Confirm the files land under the `base_path` configured in your `monitor.ini` using the `YYYY/MM/DD/` folder structure.
+    - Check today's directory exists and contains MP4s: `<base_path>/YYYY/MM/DD/`.
     - Permissions check (common gotcha): the monitoring service user must be able to read the uploaded MP4s and traverse the directories.
 
 2. Confirm staging permissions and standby/error videos exist
-    - Ensure `HOST_STAGING_PATH` exists on the host (default: `/var/lib/fakecam`).
+    - Ensure the `host_staging_path` exists on the host (default: `/var/lib/fakecam`).
     - Verify `Standby_With_Audio.mp4` and `ERROR_ALERT.mp4` exist there and are readable by the OBS container user (`PUID`/`PGID` in `docker-compose.yml`).
-    - If vsftpd writes files with restrictive permissions, verify the monitor can `chmod` new MP4s (or disable that step in `monitor.py`).
+    - If vsftpd writes files with restrictive permissions, enable permission fixups in `monitor.ini` (`permissions.enabled=true`) and set `permissions.file_mask` / `permissions.user_group` as needed.
 
 3. Confirm OBS is streaming to MediaMTX
     - In OBS, configure Stream output to `rtmp://127.0.0.1:1935/live` and set a Stream Key.
@@ -165,14 +171,11 @@ Use this checklist if you're not seeing motion clips make it into Blue Iris yet.
 
 ## Configuration
 
-The `monitor/monitor.py` script has a configuration section at the top of the file. The main settings you may need:
+The monitor is configured via an INI file.
 
-*   `BASE_PATH`: Where the camera/FTPS server drops new files (expects a `YYYY/MM/DD` folder tree under this directory).
-*   `HOST_STAGING_PATH`: Host directory where the standby/error videos live.
-*   `CONTAINER_STAGING_PATH`: The path to `HOST_STAGING_PATH` as seen inside the OBS container (default: `/fakecam`).
-*   `ERROR_VIDEO_NAME`: File name of the error video (must exist in the staging directory).
-*   `LOG_FILE`: Log path (default: `/var/log/reolink_monitor.log`).
-*   `SEND_TO`: Local system user for alerts (default: `root`).
+* Start with `monitor/monitor.ini.sample` and copy it to `monitor/monitor.ini` (or pass `--config /path/to/monitor.ini`).
+* Defaults in the sample INI match the defaults in the script.
+* Use `--test-config` to validate the INI and exit without starting monitoring.
 
 ## Troubleshooting
 
@@ -181,7 +184,7 @@ The `monitor/monitor.py` script has a configuration section at the top of the fi
     *   In OBS, verify you are streaming to the correct RTMP server and that you set a stream key.
 *   **Monitor script not running:**
     *   Check the logs for the monitor script: `journalctl -u reolink_monitor`.
-    *   Make sure the camera clips are landing under `BASE_PATH` using a `YYYY/MM/DD` folder tree.
+    *   Make sure the camera clips are landing under your configured `base_path` using a `YYYY/MM/DD` folder tree.
 
 ## Contributing
 

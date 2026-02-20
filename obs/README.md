@@ -17,7 +17,7 @@ Once inside the Webtop desktop, open OBS Studio from the application menu. If yo
 Configure these three essential pieces:
 
 ### A. The Scenes
-Create two specific scenes (names must match exactly for the monitor.py script):
+Create two specific scenes (names must match exactly for the monitor configuration):
 
 #### "Standby"
 This is your default view. 
@@ -48,7 +48,7 @@ This is your default view.
 Go to Tools > WebSocket Server Settings:
 - Enable WebSocket Server.
 - Set the port to 4455 (default).
-- Disable "Authentication" (since it's only listening on 127.0.0.1) or set a password and update it in your monitor.py.
+- Disable "Authentication" (since it's only listening on 127.0.0.1) or set a password and update `obs.password` in your `monitor.ini`.
 
 Note: OBS WebSocket is built into newer OBS versions. If you're using an older OBS build that does not include WebSocket support, you may need to install the obs-websocket plugin.
 

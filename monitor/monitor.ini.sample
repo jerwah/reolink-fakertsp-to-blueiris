@@ -1,0 +1,74 @@
+[monitor]
+# Where the Reolink/FTPS server drops new files.
+# Expects a YYYY/MM/DD folder tree under this directory.
+base_path = /home/camerauser/driveway
+
+# Host directory where standby/error videos live (operational/documentation).
+# Note: the monitor does not directly use this path; OBS consumes it via the bind mount.
+host_staging_path = /var/lib/fakecam
+
+# The path to host_staging_path as seen inside the OBS container.
+container_staging_path = /fakecam
+
+# File name of the error video (must exist in the staging directory).
+error_video_name = ERROR_ALERT.mp4
+
+# Comma-separated list of Docker containers that must be running.
+required_containers = obs_compositor, mediamtx
+
+# Disk hygiene: delete files older than this many days.
+retention_days = 7
+
+# Minimum seconds between triggers to prevent rapid retriggering.
+cooldown_seconds = 10
+
+# Log output path.
+log_file = /var/log/reolink_monitor.log
+
+# Local system user/email for alert notifications (uses the `mail` command).
+send_to = root
+
+
+[obs]
+# OBS WebSocket connection info (obsws-python / OBS WebSocket v5).
+host = 127.0.0.1
+port = 4455
+
+# Optional password if you enable WebSocket authentication in OBS.
+password =
+
+# OBS input/scene names that the monitor controls.
+media_input = Alert_Video
+scene_alert = Alert
+scene_standby = Standby
+
+
+[intervals]
+# Docker health check interval.
+health_check_seconds = 300
+
+# Main loop sleep (while monitoring a day folder).
+main_loop_sleep_seconds = 10
+
+# Poll interval while waiting for today's YYYY/MM/DD directory to appear.
+directory_poll_seconds = 30
+
+
+[permissions]
+# Permission fixups applied to:
+# - each new MP4 written into base_path/YYYY/MM/DD/
+# - the daily directory itself when monitoring begins
+#
+# This exists mainly to work around FTPS servers (e.g., vsftpd) that write restrictive
+# permissions and break container reads.
+
+# Master on/off switch for ALL permission fixups.
+enabled = true
+
+# Optional ownership fixup in `user:group` form.
+# Examples: reolink:docker  OR  1000:1000  OR  reolink:  (user only)  OR  :docker (group only)
+user_group =
+
+# Octal permission masks.
+file_mask = 0644
+directory_mask = 0755

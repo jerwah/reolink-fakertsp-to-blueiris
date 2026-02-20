@@ -6,11 +6,11 @@ Requires=docker.service
 [Service]
 Type=simple
 # Change if desired, user must be in docker group
-# and be able to write to Log, HOST_STAGING_PATH
+# and be able to write to the log file and read the base_path/staging paths
 User=root
 # Adjust these paths if your venv or script is elsewhere
 WorkingDirectory=/opt/reolink_monitor
-ExecStart=/opt/reolink_monitor/.venv/bin/python3 /opt/reolink_monitor/monitor.py
+ExecStart=/opt/reolink_monitor/.venv/bin/python3 /opt/reolink_monitor/monitor.py --config /opt/reolink_monitor/monitor.ini
 Restart=always
 RestartSec=10
 
