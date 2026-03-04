@@ -8,11 +8,12 @@ For those unfamiliar, FTPS != SFTP. In my case, I got this all working with vsft
 In your FTPS server, dedicate a user for camera use and set up a directory to receive the MP4s (and JPGs) from the camera.
 
 ## 2. Configure your camera for FTPS
-Go to your camera settings / FTP / FTP Settings:
+Go to your camera settings / Surveillance / FTP / FTP Settings:
  - Server Address: [Your server address]
  - Server Port: 990 (typically)
  - Anonymous FTP: OFF
  - Username/Password: As set up in step #1
+ - Transport Mode : Auto or PASV
  - Disable Plain Unencrypted FTP: ON
  - Remote Directory: Set to the relative path from the FTPS destination (e.g., /driveway).
  - Subfolder Creation Rule: Monitor expects: YYYY-MM-DD
